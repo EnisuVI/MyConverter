@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONVERT // File Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:    #0a0a0a;
+  --bg2:   #111111;
+  --bg3:   #1a1a1a;
+  --border:       rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.18);
+  --text:         #f0f0f0;
+  --text-muted:   #666;
+  --text-dim:     #333;
+  --accent:       #00ff88;
+  --accent-dim:   rgba(0,255,136,0.10);
+  --accent-border:rgba(0,255,136,0.28);
+  --yellow:       #ffd700;
+  --yellow-dim:   rgba(255,215,0,0.09);
+  --red:          #ff4455;
+  --red-dim:      rgba(255,68,85,0.09);
+  --font: 'IBM Plex Mono', monospace;
+}
+
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fadeUp  { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
+@keyframes spin    { to { transform: rotate(360deg) } }
+@keyframes blink   { 0%,100% { opacity:1 } 50% { opacity:0 } }
+
+/* ── Layout ─────────────────────────────────────────── */
+.page {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+header {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--border);
+  padding: 2rem 2.5rem 1.75rem;
+  animation: fadeUp .4s ease both;
+}
+.eyebrow {
+  font-size: .62rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: .45rem;
+}
+h1 {
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1;
+  margin-bottom: .55rem;
+}
+h1 span { color: var(--accent); }
+.subtitle {
+  font-size: .76rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  max-width: 460px;
+  margin-bottom: 1.1rem;
+}
+.badges { display: flex; gap: .45rem; flex-wrap: wrap; }
+.badge {
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .28rem .7rem;
+  border: 1px solid;
+  border-radius: 2px;
+}
+.badge-g { border-color: var(--accent);  color: var(--accent);  }
+.badge-y { border-color: var(--yellow);  color: var(--yellow);  }
+.badge-w { border-color: var(--border-hover); color: var(--text-muted); }
+
+/* ── Sidebar ─────────────────────────────────────────── */
+aside {
+  border-right: 1px solid var(--border);
+  padding: 1.75rem 0;
+  animation: fadeUp .4s .1s ease both;
+  animation-fill-mode: both;
+}
+.s-group { margin-bottom: 1.6rem; }
+.s-label {
+  display: block;
+  font-size: .58rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0 1.4rem;
+  margin-bottom: .45rem;
+}
+.s-item {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .42rem 1.4rem;
+  font-size: .76rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: color .15s, background .15s, border-color .15s;
+  user-select: none;
+}
+.s-item:hover { color: var(--text); background: var(--bg2); }
+.s-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
+.s-dot { width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+
+/* ── Main ────────────────────────────────────────────── */
+main {
+  padding: 2.5rem;
+  animation: fadeUp .4s .15s ease both;
+  animation-fill-mode: both;
+}
+h2 { font-size: 1.75rem; font-weight:700; letter-spacing:-.02em; margin-bottom: 1.5rem; }
+
+/* ── Info box ────────────────────────────────────────── */
+.info-box {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: 3px;
+  padding: .8rem 1.1rem;
+  font-size: .73rem;
+  color: var(--accent);
+  line-height: 1.7;
+  margin-bottom: 1.4rem;
+}
+.info-box strong { font-weight:700; }
+
+/* ── Drop zone ───────────────────────────────────────── */
+.drop-zone {
+  border: 1px dashed var(--border-hover);
+  border-radius: 4px;
+  padding: 2.75rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg2);
+  position: relative;
+  margin-bottom: 1.25rem;
+  transition: border-color .2s, background .2s;
+}
+.drop-zone:hover, .drop-zone.over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.drop-zone input {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer; width:100%; height:100%;
+}
+.drop-icon { font-size: 1.8rem; margin-bottom: .6rem; }
+.drop-title { font-size: .88rem; font-weight:600; margin-bottom:.25rem; }
+.drop-sub { font-size: .7rem; color: var(--text-muted); }
+
+/* ── File card ───────────────────────────────────────── */
+#fileCard {
+  display: none;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1rem;
+}
+#fileCard.show { display: block; }
+.fc-header { display:flex; align-items:flex-start; gap:.7rem; margin-bottom:1.1rem; }
+.fc-ext {
+  background: var(--bg3);
+  border: 1px solid var(--border-hover);
+  border-radius: 3px;
+  padding: .35rem .55rem;
+  font-size: .66rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color: var(--yellow); flex-shrink:0; margin-top:2px;
+}
+.fc-name { font-size:.83rem; font-weight:600; word-break:break-all; line-height:1.4; }
+.fc-size { font-size:.68rem; color:var(--text-muted); margin-top:2px; }
+.convert-row { display:flex; align-items:center; gap:.7rem; flex-wrap:wrap; }
+.convert-lbl { font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); }
+.arrow { color: var(--text-dim); }
+
+select {
+  background: var(--bg3);
+  border: 1px solid var(--border-hover);
+  border-radius: 3px;
+  padding: .45rem .7rem;
+  font-family: var(--font); font-size:.76rem; font-weight:600;
+  color: var(--accent); cursor:pointer; outline:none; letter-spacing:.05em;
+  transition: border-color .15s;
+}
+select:hover, select:focus { border-color: var(--accent); }
+
+.btn-convert {
+  padding: .48rem 1.2rem;
+  background: var(--accent); color:#000;
+  border: none; border-radius:3px;
+  font-family: var(--font); font-size:.72rem; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase;
+  cursor: pointer; margin-left:auto;
+  transition: opacity .15s, transform .1s;
+  position: relative;
+}
+.btn-convert:hover { opacity:.82; }
+.btn-convert:active { transform:scale(.97); }
+.btn-convert:disabled { opacity:.3; cursor:not-allowed; transform:none; }
+.btn-convert.spin-it { color: transparent; }
+.btn-convert.spin-it::after {
+  content:'';
+  position:absolute; inset:0; margin:auto;
+  width:13px; height:13px;
+  border:2px solid #000; border-top-color:transparent;
+  border-radius:50%;
+  animation: spin .6s linear infinite;
+}
+
+/* ── Status ──────────────────────────────────────────── */
+#status {
+  display:none;
+  margin-top:.7rem; padding:.6rem 1rem;
+  border-radius:3px; font-size:.73rem;
+  border-left:3px solid;
+}
+#status.show { display:block; }
+#status.processing { background:var(--yellow-dim); border-color:var(--yellow); color:var(--yellow); }
+#status.done       { background:var(--accent-dim);  border-color:var(--accent);  color:var(--accent); }
+#status.error      { background:var(--red-dim);     border-color:var(--red);     color:var(--red); }
+
+/* ── Formats grid ────────────────────────────────────── */
+.fmt-grid {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:.9rem; margin-top:2.25rem;
+}
+.fmt-group {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:4px; padding:.9rem 1.1rem;
+}
+.fmt-title {
+  font-size:.58rem; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--text-dim); margin-bottom:.65rem;
+}
+.fmt-tags { display:flex; flex-wrap:wrap; gap:.35rem; }
+.fmt-tag {
+  font-size:.63rem; padding:.22rem .55rem;
+  border:1px solid var(--border); border-radius:2px;
+  color:var(--text-muted); letter-spacing:.04em;
+  transition: border-color .15s, color .15s; cursor:default;
+}
+.fmt-tag:hover { border-color:var(--accent-border); color:var(--accent); }
+
+/* ── Cursor blink on header ──────────────────────────── */
+.cursor { animation: blink 1s step-end infinite; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">// Outil de conversion</div>
+    <h1>MY<span>.</span>CONVERTER<span class="cursor" style="color:var(--text-muted);font-weight:400">_</span></h1>
+    <p class="subtitle">Convertisseur de fichiers léger — 100&nbsp;% côté navigateur, aucun upload serveur, aucun tracking.</p>
+    <div class="badges">
+      <span class="badge badge-g">Gratuit · Open source</span>
+      <span class="badge badge-y">Côté navigateur</span>
+      <span class="badge badge-w">Images · Données · Texte</span>
+    </div>
+  </header>
+
+  <aside>
+    <div class="s-group">
+      <span class="s-label">Outils</span>
+      <div class="s-item active"><span class="s-dot"></span>Convertisseur</div>
+    </div>
+    <div class="s-group">
+      <span class="s-label">Images</span>
+      <div class="s-item"><span class="s-dot"></span>HEIC / HEIF → JPG, PNG</div>
+      <div class="s-item"><span class="s-dot"></span>PNG / JPG ↔ WebP</div>
+      <div class="s-item"><span class="s-dot"></span>BMP / GIF → PNG, JPG</div>
+    </div>
+    <div class="s-group">
+      <span class="s-label">Données</span>
+      <div class="s-item"><span class="s-dot"></span>CSV ↔ JSON</div>
+    </div>
+    <div class="s-group">
+      <span class="s-label">Texte</span>
+      <div class="s-item"><span class="s-dot"></span>Markdown → HTML</div>
+      <div class="s-item"><span class="s-dot"></span>HTML → TXT</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="eyebrow">// Conversion</div>
+    <h2>Convertir un fichier</h2>
+
+    <div class="info-box">
+      <strong>Zéro upload.</strong> Tous les fichiers sont traités directement dans votre navigateur — rien n'est jamais envoyé à un serveur.
+    </div>
+
+    <div class="drop-zone" id="drop">
+      <input type="file" id="fileInput">
+      <div class="drop-icon">⬆</div>
+      <div class="drop-title">Déposer un fichier ici</div>
+      <div class="drop-sub">ou cliquer pour parcourir</div>
+    </div>
+
+    <div id="fileCard">
+      <div class="fc-header">
+        <div class="fc-ext" id="fcExt">—</div>
+        <div>
+          <div class="fc-name" id="fcName"></div>
+          <div class="fc-size" id="fcSize"></div>
+        </div>
+      </div>
+      <div class="convert-row">
+        <span class="convert-lbl">Vers</span>
+        <span class="arrow">→</span>
+        <select id="fmtSelect"></select>
+        <button class="btn-convert" id="convertBtn" onclick="doConvert()">Convertir →</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <div class="fmt-grid">
+      <div class="fmt-group">
+        <div class="fmt-title">Images</div>
+        <div class="fmt-tags">
+          <span class="fmt-tag">HEIC→JPG</span><span class="fmt-tag">HEIC→PNG</span>
+          <span class="fmt-tag">PNG→JPG</span><span class="fmt-tag">JPG→PNG</span>
+          <span class="fmt-tag">PNG→WebP</span><span class="fmt-tag">JPG→WebP</span>
+          <span class="fmt-tag">BMP→PNG</span><span class="fmt-tag">GIF→JPG</span>
+        </div>
+      </div>
+      <div class="fmt-group">
+        <div class="fmt-title">Données</div>
+        <div class="fmt-tags">
+          <span class="fmt-tag">CSV→JSON</span><span class="fmt-tag">JSON→CSV</span>
+        </div>
+      </div>
+      <div class="fmt-group">
+        <div class="fmt-title">Texte & Markup</div>
+        <div class="fmt-tags">
+          <span class="fmt-tag">MD→HTML</span><span class="fmt-tag">TXT→MD</span><span class="fmt-tag">HTML→TXT</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+<script>
+const CONV = {
+  heic:  ['jpg','png'],
+  heif:  ['jpg','png'],
+  png:   ['jpg','webp'],
+  jpg:   ['png','webp'],
+  jpeg:  ['png','webp'],
+  bmp:   ['png','jpg'],
+  gif:   ['png','jpg'],
+  webp:  ['png','jpg'],
+  csv:   ['json'],
+  json:  ['csv'],
+  md:    ['html'],
+  txt:   ['md'],
+  html:  ['txt'],
+}
+
+let currentFile = null
+
+const drop      = document.getElementById('drop')
+const fileInput = document.getElementById('fileInput')
+const fileCard  = document.getElementById('fileCard')
+const fcExt     = document.getElementById('fcExt')
+const fcName    = document.getElementById('fcName')
+const fcSize    = document.getElementById('fcSize')
+const fmtSelect = document.getElementById('fmtSelect')
+const convertBtn= document.getElementById('convertBtn')
+const statusEl  = document.getElementById('status')
+
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]))
+drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('over') })
+drop.addEventListener('dragleave', ()=> drop.classList.remove('over'))
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); handleFile(e.dataTransfer.files[0]) })
+
+function handleFile(f) {
+  if (!f) return
+  currentFile = f
+  const ext = f.name.split('.').pop().toLowerCase()
+  const targets = CONV[ext]
+
+  fcExt.textContent  = '.' + ext
+  fcName.textContent = f.name
+  fcSize.textContent = fmtSize(f.size)
+  hideStatus()
+  fileCard.classList.add('show')
+
+  if (!targets) {
+    fmtSelect.innerHTML = '<option>—</option>'
+    convertBtn.disabled = true
+    showStatus('error', 'Format non supporté.')
+    return
+  }
+  convertBtn.disabled = false
+  fmtSelect.innerHTML = targets.map(t => `<option value="${t}">.${t.toUpperCase()}</option>`).join('')
+}
+
+async function doConvert() {
+  if (!currentFile) return
+  const ext  = currentFile.name.split('.').pop().toLowerCase()
+  const to   = fmtSelect.value
+  const base = currentFile.name.replace(/\.[^.]+$/, '')
+
+  convertBtn.disabled = true
+  convertBtn.classList.add('spin-it')
+  showStatus('processing', 'Conversion en cours…')
+
+  try {
+    let blob, outName
+
+    if (['heic','heif'].includes(ext)) {
+      blob = await heic2any({ blob: currentFile, toType: to === 'jpg' ? 'image/jpeg' : 'image/png', quality: 0.92 })
+      outName = base + '.' + to
+    }
+    else if (['png','jpg','jpeg','bmp','gif','webp'].includes(ext)) {
+      blob = await imgConvert(currentFile, to)
+      outName = base + '.' + to
+    }
+    else if (ext === 'csv') {
+      blob = new Blob([csvToJson(await currentFile.text())], { type: 'application/json' })
+      outName = base + '.json'
+    }
+    else if (ext === 'json') {
+      blob = new Blob([jsonToCsv(await currentFile.text())], { type: 'text/csv' })
+      outName = base + '.csv'
+    }
+    else if (ext === 'md') {
+      blob = new Blob([mdToHtml(await currentFile.text())], { type: 'text/html' })
+      outName = base + '.html'
+    }
+    else if (ext === 'txt') {
+      blob = new Blob([await currentFile.text()], { type: 'text/markdown' })
+      outName = base + '.md'
+    }
+    else if (ext === 'html') {
+      const tmp = document.createElement('div')
+      tmp.innerHTML = await currentFile.text()
+      blob = new Blob([tmp.innerText], { type: 'text/plain' })
+      outName = base + '.txt'
+    }
+
+    dlBlob(blob, outName)
+    showStatus('done', '✓  ' + outName + ' — téléchargé avec succès')
+  } catch(e) {
+    showStatus('error', 'Erreur : ' + (e.message || 'Conversion échouée'))
+  }
+
+  convertBtn.disabled = false
+  convertBtn.classList.remove('spin-it')
+}
+
+/* ── Helpers ─────────────────────────────────────────── */
+function imgConvert(file, to) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader()
+    reader.onerror = () => rej(new Error('Lecture du fichier échouée'))
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onerror = () => rej(new Error('Décodage image échoué'))
+      img.onload = () => {
+        const c = document.createElement('canvas')
+        c.width = img.width; c.height = img.height
+        const ctx = c.getContext('2d')
+        if (to === 'jpg') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height) }
+        ctx.drawImage(img, 0, 0)
+        const mime = to === 'jpg' ? 'image/jpeg' : to === 'webp' ? 'image/webp' : 'image/png'
+        c.toBlob(b => b ? res(b) : rej(new Error('Canvas vide')), mime, 0.92)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+function csvToJson(csv) {
+  const lines = csv.trim().split('\n')
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''))
+  return JSON.stringify(lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''))
+    return Object.fromEntries(headers.map((h,i) => [h, vals[i] ?? '']))
+  }), null, 2)
+}
+
+function jsonToCsv(text) {
+  const arr = JSON.parse(text)
+  const data = Array.isArray(arr) ? arr : [arr]
+  const h = Object.keys(data[0])
+  return [h.join(','), ...data.map(r => h.map(k => JSON.stringify(r[k]??'')).join(','))].join('\n')
+}
+
+function mdToHtml(md) {
+  const h = md
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2">$1</a>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/\n\n/g,'</p><p>')
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Converted</title></head><body><p>${h}</p></body></html>`
+}
+
+function dlBlob(blob, name) {
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = name
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove() }, 2000)
+}
+
+function showStatus(type, msg) {
+  statusEl.className = 'show ' + type
+  statusEl.textContent = msg
+}
+function hideStatus() {
+  statusEl.className = ''
+  statusEl.textContent = ''
+}
+
+function fmtSize(n) {
+  if (n < 1024)    return n + ' o'
+  if (n < 1048576) return (n/1024).toFixed(1) + ' Ko'
+  return (n/1048576).toFixed(1) + ' Mo'
+}
+</script>
+</body>
+</html>
